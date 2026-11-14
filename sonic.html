@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SONIC XIT - Premium Client</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #060608; --glow: #00A3FF; --inp: #161A22; --border: #252A35; --text: #FFF; --succ: #00FF66; --dang: #FF3B30; --panel-bg: #0d1117; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; user-select: none; }
+        body { background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; transition: 0.3s;}
+        .container { width: 100%; max-width: 420px; position: relative;}
+        
+        .screen { display: none; flex-direction: column; align-items: center; animation: fadeIn 0.3s ease; width: 100%;}
+        .screen.active { display: flex; }
+        
+        /* شريط الحالة العلوي (متصل + الترجمة) */
+        .top-status-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .connected-box { color: var(--succ); font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 5px; }
+        .lang-box { background: rgba(0,163,255,0.1); border: 1px solid var(--glow); color: var(--glow); padding: 6px 15px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.2s;}
+        .lang-box:hover { background: var(--glow); color: #000; }
+
+        /* شاشة الدخول */
+        #login-screen { text-align: center; position: relative; justify-content: center; min-height: 80vh;}
+        .big-logo-box { margin-bottom: 40px; }
+        .big-logo-title { font-family: 'Orbitron'; font-size: 55px; font-weight: 900; font-style: italic; line-height: 1; text-shadow: 0 0 25px rgba(255, 255, 255, 0.2);}
+        .big-logo-title .sonic { color: #FFF; } 
+        .big-logo-title .xit { color: var(--glow); text-shadow: 0 0 25px var(--glow); }
+        .big-logo-sub { color: var(--glow); font-family: 'Orbitron'; font-weight: bold; font-size: 22px; letter-spacing: 4px; margin-top: 5px; }
+        .sub-text { color: #8E95A3; font-size: 14px; margin-bottom: 30px; }
+        
+        /* خانة الكود */
+        .input-group { display: flex; width: 100%; position: relative; margin-bottom: 15px; direction: ltr;}
+        .input-group input { width: 100%; padding: 16px 105px 16px 85px; border-radius: 10px; border: 1px solid var(--border); background: var(--inp); color: #FFF; text-align: center; outline: none; font-family: 'Orbitron'; letter-spacing: 1px; transition: 0.3s;}
+        .input-group input:focus { border-color: var(--glow); box-shadow: 0 0 15px rgba(0,163,255,0.2); }
+        
+        .input-actions { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); display: flex; align-items: center; gap: 6px; direction: ltr; }
+        .btn-paste { background: #079cf0; border: 1px solid #079cf0; color: #fff; font-size: 12px; font-weight: bold; padding: 7px 11px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-family: 'Cairo'; white-space: nowrap;}
+        .btn-paste:hover { background: var(--glow); color: #000; }
+        .icon-btn { background: transparent; border: none; color: #8E95A3; font-size: 18px; cursor: pointer; padding: 5px; transition: 0.2s; }
+        .icon-btn:hover { color: var(--glow); }
+        
+        /* زر الدخول */
+        .btn-login { width: 100%; padding: 16px; border-radius: 10px; border: none; background: linear-gradient(90deg, #0056b3, #00A3FF); color: #FFF; font-weight: bold; font-size: 18px; cursor: pointer; margin-bottom: 20px; box-shadow: 0 0 20px rgba(0,123,255,0.3); transition: all 0.3s ease;}
+        .btn-login:focus { outline: none; box-shadow: 0 0 30px rgba(0,163,255,0.8); transform: scale(1.02); border: 1px solid #FFF; }
+        .contact-info { margin-top: 30px; color: #8E95A3; font-size: 13px; text-align: center;}
+        .contact-info a { color: var(--glow); text-decoration: none; font-weight: bold; font-family: 'Orbitron'; }
+
+        /* ------- شاشة العداد ------- */
+        #user-screen { text-align: center; width: 100%; }
+        .radar-container { position: relative; width: 220px; height: 220px; margin: 0 auto 30px; display: flex; justify-content: center; align-items: center; }
+        .radar-ring { position: absolute; width: 100%; height: 100%; border: 2px dashed rgba(0,163,255,0.4); border-radius: 50%; animation: rotate 15s linear infinite; }
+        .radar-inner { width: 160px; height: 160px; background: rgba(13, 17, 23, 0.8); border: 2px solid var(--glow); border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: inset 0 0 30px rgba(0,163,255,0.2), 0 0 30px rgba(0,163,255,0.2); z-index: 2; }
+        .radar-brand { font-family: 'Orbitron'; font-size: 20px; font-weight: 900; font-style: italic; color: #FFF; line-height: 1;}
+        .radar-brand span { color: var(--glow); }
+        .radar-sub { font-family: 'Orbitron'; font-size: 10px; color: var(--glow); letter-spacing: 2px; margin-top: 3px;}
+        .timer { font-family: 'Orbitron'; font-size: 22px; font-weight: 700; color: #FFF; margin-top: 10px; letter-spacing: 1px;}
+        .timer-label { color: #8E95A3; font-size: 12px; margin-bottom: 20px;}
+        .key-display { width: 100%; background: var(--inp); border: 1px solid var(--border); border-radius: 10px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .btn-happ { width: 100%; background: linear-gradient(90deg, #007bff, #00A3FF); color: #FFF; border: none; padding: 16px; border-radius: 10px; font-weight: bold; font-size: 18px; cursor: pointer; margin-bottom: 20px; box-shadow: 0 0 20px rgba(0,123,255,0.4); transition: 0.3s; display: flex; justify-content: center; align-items: center; gap: 8px;}
+        .btn-happ:hover { box-shadow: 0 0 30px rgba(0,163,255,0.6); transform: translateY(-2px); }
+        .bottom-nav { width: 100%; background: var(--inp); border: 1px solid var(--border); border-radius: 15px; display: flex; padding: 12px 0; margin-top: 20px;}
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; color: #8E95A3; font-size: 12px; cursor: pointer; gap: 5px;}
+        .nav-item.active { color: var(--glow); }
+
+        /* ------- شاشة الإعدادات ------- */
+        #settings-screen { background: var(--bg); width: 100%; text-align: right; display: none; flex-direction: column;}
+        #settings-screen.active { display: flex; }
+        .settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%;}
+        .logout-btn { background: rgba(255,59,48,0.1); color: var(--dang); border: 1px solid var(--dang); padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;}
+        .logo-image-container { text-align: center; margin-bottom: 30px; width: 100%;}
+        .logo-text-custom { font-family: 'Orbitron'; font-size: 35px; font-weight: 900; font-style: italic; color: #FFF; text-shadow: 0 0 20px rgba(0,163,255,0.5);}
+        .logo-text-custom span { color: var(--glow); }
+        .section-title { color: #8E95A3; font-size: 13px; margin-bottom: 10px; margin-right: 5px;}
+        .settings-list { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .setting-item { background: var(--inp); border: 1px solid var(--border); border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.3s; text-decoration: none; color: var(--text);}
+        .setting-item:hover { border-color: var(--glow); }
+        .setting-info { display: flex; align-items: center; gap: 12px; }
+        .setting-icon { width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 20px; }
+        .setting-text h4 { font-size: 15px; margin-bottom: 3px; }
+        .setting-text p { font-size: 11px; color: #8E95A3; }
+        .setting-item.danger { border-color: rgba(255, 59, 48, 0.3); }
+        .setting-item.danger .setting-text h4 { color: var(--dang); }
+        .version-info { text-align: center; color: #8E95A3; font-size: 12px; margin-top: 30px; line-height: 1.8; width: 100%;}
+        .version-info span { color: var(--glow); font-weight: bold; }
+
+        #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--glow); color: white; padding: 10px 20px; border-radius: 8px; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 100; font-weight:bold;}
+        
+        @keyframes rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div id="toast">تم!</div>
+
+    <div class="container">
+        
+        <!-- 1. شاشة إدخال الكود -->
+        <div id="login-screen" class="screen active">
+            <div class="top-status-bar">
+                <div class="connected-box" id="txt-connected">● متصل</div>
+                <div class="lang-box" onclick="toggleLanguage()">🌐 <span id="lang-text">EN</span></div>
+            </div>
+
+            <div class="big-logo-box">
+                <div class="big-logo-title"><span class="sonic">SONIC</span> <span class="xit">XIT</span></div>
+                <div class="big-logo-sub">CLIENT</div>
+            </div>
+
+            <div class="sub-text" id="txt-sub">أدخل مفتاح التفعيل الخاص بك للدخول.</div>
+            
+            <div class="input-group">
+                <input type="text" id="user-key" placeholder="SONIC-XIT-XXXX" dir="ltr" autocomplete="off" oninput="this.placeholder = ''">
+                <div class="input-actions">
+                    <button class="btn-paste" id="btn-paste" onclick="pasteKey()">لصق 📋</button>
+                    <button class="icon-btn" id="toggle-eye" onclick="toggleVisibility()" title="إخفاء/إظهار">👁️</button>
+                </div>
+            </div>
+            
+            <button class="btn-login" id="login-btn" onclick="loginUser()">تسجيل الدخول</button>
+            
+            <div class="contact-info" id="txt-contact">
+                المفتاح الصالح يفتح المحرك. كل مفتاح مرتبط بجهاز واحد.<br>
+                <a href="https://t.me/Sonic_JO" target="_blank">@Sonic_JO</a>
+            </div>
+        </div>
+
+        <!-- 2. شاشة العداد -->
+        <div id="user-screen" class="screen">
+            <div class="top-status-bar">
+                <div class="connected-box">● <span id="txt-connected2">متصل</span></div>
+                <div class="lang-box" onclick="toggleLanguage()">🌐 <span id="lang-text2">EN</span></div>
+            </div>
+
+            <div class="radar-container">
+                <div class="radar-ring"></div>
+                <div class="radar-inner">
+                    <div class="radar-brand">SONIC <span>XIT</span></div>
+                    <div class="radar-sub">CLIENT</div>
+                    <div class="timer" id="timer">00:00:00</div>
+                </div>
+            </div>
+            
+            <div class="timer-label" id="txt-timer-label">الوقت المتبقي</div>
+            
+            <div class="key-display">
+                <div>
+                    <div style="color:#8E95A3; font-size:12px;" id="txt-key-title">المفتاح</div>
+                    <div id="disp-key" style="font-family:Orbitron;">...</div>
+                </div>
+                <button class="icon-btn" onclick="copyUserKey()" style="background: var(--inp); border:1px solid var(--border); border-radius:6px; padding:5px 10px;">📋</button>
+            </div>
+            
+            <button class="btn-happ" onclick="injectHapp()" id="btn-happ">تسجيل HAPPY 🌐</button>
+            
+            <div class="bottom-nav">
+                <div class="nav-item active"><span>🏠</span> <span id="txt-home">الرئيسية</span></div>
+                <div class="nav-item" onclick="switchScreen('settings-screen')"><span>⚙️</span> <span id="txt-settings">الإعدادات</span></div>
+            </div>
+        </div>
+
+        <!-- 3. شاشة الإعدادات -->
+        <div id="settings-screen" class="screen">
+            <div class="settings-header">
+                <button class="logout-btn" onclick="logout()">خروج</button>
+                <div class="connected-box">● <span id="txt-connected3">متصل</span></div>
+            </div>
+
+            <div class="logo-image-container">
+                <div class="logo-text-custom">SONIC <span>XIT</span><br><span style="font-size:18px; color:var(--glow); font-style:normal; letter-spacing:2px;">CLIENT</span></div>
+            </div>
+
+            <p class="section-title" id="txt-apps-title">التطبيقات والمجتمع</p>
+            <div class="settings-list">
+                <a href="https://github.com/Happ-proxy/happ-android/releases/latest/download/Happ.apk" class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-icon" style="color: var(--glow);">📥</div>
+                        <div class="setting-text">
+                            <h4 id="txt-happ-title">تحميل تطبيق HAPP</h4>
+                            <p id="txt-happ-sub">احصل على عمل Happ الرسمي</p>
+                        </div>
+                    </div>
+                    <div style="color: #8E95A3;">›</div>
+                </a>
+
+                <a href="https://t.me/Sonic_100K" target="_blank" class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-icon" style="color: var(--glow);">✈️</div>
+                        <div class="setting-text">
+                            <h4 id="txt-tg-title">قناة التلغرام</h4>
+                            <p>t.me/Sonic_100K</p>
+                        </div>
+                    </div>
+                    <div style="color: #8E95A3;">›</div>
+                </a>
+            </div>
+
+            <p class="section-title" id="txt-account-title">الحساب</p>
+            <div class="settings-list">
+                <div class="setting-item" onclick="copyUserKey()">
+                    <div class="setting-info">
+                        <div class="setting-icon" style="color: var(--glow);">📄</div>
+                        <div class="setting-text">
+                            <h4 id="txt-copy-title">نسخ مفتاح الدخول</h4>
+                            <p id="txt-copy-sub">اضغط لنسخ مفتاحك</p>
+                        </div>
+                    </div>
+                    <div style="color: #8E95A3;">›</div>
+                </div>
+
+                <div class="setting-item danger" onclick="logout()">
+                    <div class="setting-info">
+                        <div class="setting-icon" style="color: var(--dang);">🚪</div>
+                        <div class="setting-text">
+                            <h4 id="txt-logout-title">خروج</h4>
+                            <p id="txt-logout-sub">مسح الجلسة المحفوظة</p>
+                        </div>
+                    </div>
+                    <div style="color: #8E95A3;">›</div>
+                </div>
+            </div>
+
+            <div class="version-info">
+                <span>SONIC CLIENT</span><br>
+                <span id="txt-version">الإصدار 1.0</span>
+            </div>
+
+            <div class="bottom-nav">
+                <div class="nav-item" onclick="switchScreen('user-screen')"><span>🏠</span> <span id="txt-home2">الرئيسية</span></div>
+                <div class="nav-item active"><span>⚙️</span> <span id="txt-settings2">الإعدادات</span></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const BIN_ID = "6af38208ffd5d16053b7be3b";
+        const API_KEY = "$2a$10$hwehRSCL5qz8WnzrHvHiAup6Xqjpv15c1vwCl0QxHxyCNaq90TrO.";
+        const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+        
+        // 🛑 الكود الجديد الخاص بك
+        const HAPP_KEY = "happ://crypt5/fzvdumvi7Ejzcf1DBrCTSKAP106kYq4AX7vNss39NOznhQXLbl8k+No3b/IrxMpmUxY3HIa2PKeDAadvB4xGR3x9kK8vk4gqT1GchhY5skdTQaD968rxNMA4bFoNXuemYA8sXx==UXCBV1us5maueGEaJG5Xe8WWGct5+1tOhyv+wRN6kl5nXMWuyoSEaU2+eo156Tq8B1r3fz1hcS+P/XgGaGzJOKLyyWktn9nPiV8Mwq4RfQzo3GEmzacyz5CKUy6rZ3Wk61iRq6YdYfMLxbwd1l4pvlDorCDoTD+sZPz58nwISZxACMlmP7LJHz0KFcH/t/fLVWtHLbcNtI0Tuxc+LKS+QsInfuMRFl6wxHiypmpmsREUAqJLnOF51VwoDiyfrrtEO/wp18dkmIYKp4v6kP6vlkHtxtetdsRex0G98JdZM9+Td6RzguNAH3TUYZZjnvzDtxe82mNNTrjkNW1DAXyLYD9Bm7p8xleaQG9q/AiNgvU7l2mOaFoJMvSZmkhj/Z9cqt9Gb3+gGgS9dwlAajEiGcE56PjcKilTMU28+N774w96MMVhp20QBQHgncDcJOsBEeyx+cjytnRKZZ4HeI16t7wnu6tpKv/GfTNLiLqdhi6Psvc7Mlg6iR/6SNPzztlWc/a6ySkEPCcVhzyLG+vPCraH21xfLs8/dRxjvd+AB2dBz4W0+0pT0MtZuWEF3LiaPIk3e2mnXFhXduMup1YhAnvNE+CDygeU/TRhZwTEP0m5G/Ph/bKPdH9s5IkRhjvGbU6VB2yAv/n0llKab7VlVeJ+wxWVHTiZ/6j1U2UIfoQ=ff";
+
+        let timerInt = null, currentUserKey = null;
+        let isHidden = false;
+        let currentLang = 'ar';
+
+        const translations = {
+            ar: { sub: "أدخل مفتاح التفعيل الخاص بك للدخول.", login: "تسجيل الدخول", paste: "لصق 📋", home: "الرئيسية", settings: "الإعدادات", connected: "متصل", timerLabel: "الوقت المتبقي", keyTitle: "المفتاح", happBtn: "تسجيل HAPPY 🌐", appsTitle: "التطبيقات والمجتمع", happTitle: "تحميل تطبيق HAPP", happSub: "احصل على عمل Happ الرسمي", tgTitle: "قناة التلغرام", accountTitle: "الحساب", copyTitle: "نسخ مفتاح الدخول", copySub: "اضغط لنسخ مفتاحك", logoutTitle: "خروج", logoutSub: "مسح الجلسة المحفوظة", version: "الإصدار 1.0", lang: "EN" },
+            en: { sub: "Enter your activation key to login.", login: "Login", paste: "Paste 📋", home: "Home", settings: "Settings", connected: "Connected", timerLabel: "Time Remaining", keyTitle: "Key", happBtn: "Register HAPPY 🌐", appsTitle: "Apps & Community", happTitle: "Download HAPP App", happSub: "Get official Happ app", tgTitle: "Telegram Channel", accountTitle: "Account", copyTitle: "Copy Login Key", copySub: "Click to copy your key", logoutTitle: "Logout", logoutSub: "Clear saved session", version: "Version 1.0", lang: "AR" }
+        };
+
+        window.toggleLanguage = function() {
+            currentLang = currentLang === 'ar' ? 'en' : 'ar';
+            document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+            
+            document.getElementById('lang-text').innerText = translations[currentLang].lang;
+            document.getElementById('lang-text2').innerText = translations[currentLang].lang;
+            document.getElementById('txt-sub').innerText = translations[currentLang].sub;
+            document.getElementById('login-btn').innerText = translations[currentLang].login;
+            document.getElementById('btn-paste').innerText = translations[currentLang].paste;
+            document.getElementById('txt-connected').innerText = "● " + translations[currentLang].connected;
+            document.getElementById('txt-connected2').innerText = translations[currentLang].connected;
+            document.getElementById('txt-connected3').innerText = translations[currentLang].connected;
+            document.getElementById('txt-timer-label').innerText = translations[currentLang].timerLabel;
+            document.getElementById('txt-key-title').innerText = translations[currentLang].keyTitle;
+            document.getElementById('btn-happ').innerText = translations[currentLang].happBtn;
+            document.getElementById('txt-apps-title').innerText = translations[currentLang].appsTitle;
+            document.getElementById('txt-happ-title').innerText = translations[currentLang].happTitle;
+            document.getElementById('txt-happ-sub').innerText = translations[currentLang].happSub;
+            document.getElementById('txt-tg-title').innerText = translations[currentLang].tgTitle;
+            document.getElementById('txt-account-title').innerText = translations[currentLang].accountTitle;
+            document.getElementById('txt-copy-title').innerText = translations[currentLang].copyTitle;
+            document.getElementById('txt-copy-sub').innerText = translations[currentLang].copySub;
+            document.getElementById('txt-logout-title').innerText = translations[currentLang].logoutTitle;
+            document.getElementById('txt-logout-sub').innerText = translations[currentLang].logoutSub;
+            document.getElementById('txt-version').innerText = translations[currentLang].version;
+            document.getElementById('txt-home').innerText = translations[currentLang].home;
+            document.getElementById('txt-settings').innerText = translations[currentLang].settings;
+            document.getElementById('txt-home2').innerText = translations[currentLang].home;
+            document.getElementById('txt-settings2').innerText = translations[currentLang].settings;
+        };
+
+        function toast(m) { const el = document.getElementById('toast'); el.innerText = m; el.style.opacity = 1; setTimeout(()=>el.style.opacity=0, 3000); }
+        function switchScreen(id) { document.querySelectorAll('.screen').forEach(e=>e.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+        
+        async function fetchDB() { const r = await fetch(`${API_URL}/latest`, {headers:{'X-Master-Key':API_KEY}}); const d = await r.json(); return d.record || {}; }
+        async function saveDB(db) { await fetch(API_URL, {method:'PUT', headers:{'Content-Type':'application/json','X-Master-Key':API_KEY}, body:JSON.stringify(db)}); }
+
+        function toggleVisibility() {
+            const input = document.getElementById('user-key');
+            const icon = document.getElementById('toggle-eye');
+            isHidden = !isHidden;
+            input.type = isHidden ? 'password' : 'text';
+            icon.innerText = isHidden ? '🙈' : '👁️';
+        }
+
+        async function pasteKey() {
+            const input = document.getElementById('user-key');
+            input.focus();
+
+            try {
+                if (navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
+                    const clipboardText = await navigator.clipboard.readText();
+                    const pastedCode = (clipboardText || '').trim();
+                    if (pastedCode) {
+                        input.value = pastedCode;
+                        input.placeholder = '';
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        toast("تم لصق الكود تلقائياً 📋");
+                        return;
+                    }
+                    toast("الحافظة فارغة؛ انسخ الكود أولاً");
+                    return;
+                }
+            } catch (err) {}
+
+            input.focus();
+            input.select();
+            toast("اسمح بالوصول للحافظة أو اضغط مطولاً واختر لصق");
+        }
+
+        async function copyTextCompat(value) {
+            if (!value) return false;
+
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(value);
+                    return true;
+                }
+            } catch (err) {}
+
+            const area = document.createElement('textarea');
+            area.value = value;
+            area.setAttribute('readonly', '');
+            area.style.position = 'fixed';
+            area.style.opacity = '0';
+            area.style.left = '-9999px';
+            document.body.appendChild(area);
+            area.focus();
+            area.select();
+            area.setSelectionRange(0, area.value.length);
+
+            let copied = false;
+            try { copied = document.execCommand('copy'); } catch (err) { copied = false; }
+            area.remove();
+            return copied;
+        }
+
+        async function loginUser() {
+            const k = document.getElementById('user-key').value.trim().toUpperCase();
+            if(!k) return toast("أدخل الكود");
+            const db = await fetchDB();
+            if(!db.keys||!db.keys[k]) return toast("الكود غير صحيح");
+            if(db.keys[k].used) return toast("هذا الكود مستخدم بالفعل");
+            
+            const exp = Date.now() + (db.keys[k].days * 864e5);
+            db.keys[k].used = true; db.keys[k].expiry = exp;
+            db.keys[k].activation = Date.now();
+            await saveDB(db);
+            
+            currentUserKey = k; 
+            switchScreen('user-screen'); 
+            
+            document.getElementById('disp-key').innerText = k;
+            
+            startTimer(exp);
+            toast("تم التفعيل!");
+        }
+
+        async function copyUserKey(){
+            const value = currentUserKey || document.getElementById('user-key').value.trim();
+            if (!value) {
+                toast("اكتب المفتاح أولاً");
+                document.getElementById('user-key').focus();
+                return;
+            }
+            const copied = await copyTextCompat(value);
+            if (copied) {
+                toast("تم نسخ المفتاح 📋");
+            } else {
+                const input = document.getElementById('user-key');
+                input.value = value;
+                input.focus();
+                input.select();
+                toast("حددت المفتاح؛ اضغط نسخ من لوحة المفاتيح");
+            }
+        }
+        
+        function injectHapp(){ window.location.href = HAPP_KEY; }
+        function logout(){ location.reload(); }
+
+        function startTimer(exp) {
+            const el = document.getElementById('timer');
+            if(timerInt) clearInterval(timerInt);
+            timerInt = setInterval(() => {
+                const left = exp - Date.now();
+                if(left<=0) { clearInterval(timerInt); el.innerText="00:00:00"; return; }
+                const h = Math.floor(left/36e5).toString().padStart(2,'0');
+                const m = Math.floor((left%36e5)/6e4).toString().padStart(2,'0');
+                const s = Math.floor((left%6e4)/1000).toString().padStart(2,'0');
+                el.innerText = `${h}:${m}:${s}`;
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
